@@ -1,24 +1,34 @@
+#Name: Kamil Roginski
+#Date: 13 APR 2025
+#Professor: Mark Babcock
+#Course: CYOP 300
+
 """
-Lab5 - Python Data Analysis App
+LAB 5: Python Data Analysis App
 
-This application allows the user to load one of two CSV files (Population and Housing Data),
-perform statistical analysis (count, mean, standard deviation, min, and max) on selected columns,
-and display a histogram of the data.
+1. Data Analysis and Visualization:
+   - Loads two CSV files: Population Data (PopChange.csv) and Housing Data (Housing.csv).
+   - For Population Data, supports analysis on columns 'Pop Apr 1', 'Pop Jul 1', and 'Change Pop'.
+   - For Housing Data, supports analysis on columns 'AGE', 'BEDRMS',
+     'BUILT', 'ROOMS', and 'UTILITY'.
+   - Computes essential statistics including count, mean, standard deviation, min, and max.
+   - Generates and displays histograms for the selected columns using matplotlib.
 
-Submission files:
-    - data_analysis_app.py      (Python Data Analysis Code)
+2. User Interaction and Error Handling:
+   - Provides a text-based menu interface for file and column selection.
+   - Validates user input with prompts to correct invalid entries, ensuring robust error handling.
+   - Maintains continuous interaction until the user opts to exit the program.
+
+3. Object-Oriented Programming:
+   - Implements a DataAnalyzer class to encapsulate data processing functionalities.
+   - Uses methods for computing statistics and plotting histograms.
+
+CSV files used:
     - PopChange.csv             (Population Data CSV)
     - Housing.csv               (Housing Data CSV)
-    - Lab5_TestResults.pdf      (Document containing the test results including a test table and Pylint results)
-
-Required libraries: pandas, numpy, matplotlib
-
-Make sure to install the necessary modules before running the code:
-    pip install pandas numpy matplotlib
 """
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -26,7 +36,6 @@ class DataAnalyzer:
     """
     A simple class for analyzing data from a pandas DataFrame.
     """
-
     def __init__(self, df):
         """
         Initialize the analyzer with a DataFrame.
@@ -42,8 +51,11 @@ class DataAnalyzer:
         try:
             # Ensure the column is numeric for calculations.
             series = self.df[column].astype(float)
-        except Exception as e:
-            print("Error processing column", column, ":", e)
+        except KeyError as e:
+            print(f"Error: Column '{column}' not found in DataFrame. ({e})")
+            return None
+        except ValueError as e:
+            print(f"Error: Cannot convert data in column '{column}' to float. ({e})")
             return None
 
         count = series.count()
@@ -66,125 +78,144 @@ class DataAnalyzer:
             plt.xlabel(column)
             plt.ylabel("Frequency")
             plt.show()
-        except Exception as e:
-            print("Error plotting histogram for", column, ":", e)
+        except KeyError as e:
+            print(f"Error: Column '{column}' not found in DataFrame. ({e})")
+        except ValueError as e:
+            print(f"Error: Cannot convert data in column '{column}' "
+                  f"to float for histogram plotting. ({e})")
 
+def display_main_menu():
+    """
+    Displays the main menu and returns the user's choice.
+    """
+    print("\nSelect the file you want to analyze:")
+    print("1. Population Data")
+    print("2. Housing Data")
+    print("3. Exit the Program")
+    return input("Enter your choice (1-3): ").strip()
+
+
+def display_population_menu():
+    """
+    Displays the population column menu and returns the user's choice.
+    """
+    print("\nSelect the Column you want to analyze:")
+    print("a. Pop Apr 1")
+    print("b. Pop Jul 1")
+    print("c. Change Pop")
+    print("d. Exit Column")
+    return input("Enter your choice (a-d): ").strip().lower()
+
+def display_housing_menu():
+    """
+    Displays the housing column menu and returns the user's choice.
+    """
+    print("\nSelect the Column you want to analyze:")
+    print("a. AGE")
+    print("b. BEDRMS")
+    print("c. BUILT")
+    print("d. ROOMS")
+    print("e. UTILITY")
+    print("f. Exit Column")
+    return input("Enter your choice (a-f): ").strip().lower()
+
+def handle_population_data():
+    """
+    Handles the loading and processing of Population Data.
+    """
+    try:
+        pop_df = pd.read_csv("PopChange.csv")
+    except FileNotFoundError as e:
+        print(f"Error reading Population CSV file: File not found. ({e})")
+        return
+    except pd.errors.EmptyDataError as e:
+        print(f"Error reading Population CSV file: No data found. ({e})")
+        return
+
+    analyzer = DataAnalyzer(pop_df)
+    print("You have entered Population Data.")
+
+    while True:
+        col_choice = display_population_menu()
+        if col_choice == 'd':
+            print("Exiting Population Data column menu.")
+            break
+
+        # Map user choice to the appropriate column name.
+        column = {"a": "Pop Apr 1", "b": "Pop Jul 1", "c": "Change Pop"}.get(col_choice)
+        if column is None:
+            print("Invalid column choice. Please enter a valid option (a, b, c, or d).")
+            continue
+
+        print(f"You selected {column}")
+        stats = analyzer.compute_statistics(column)
+        if stats is None:
+            continue
+        count, mean, std, min_val, max_val = stats
+        print("The statistics for this column are:")
+        print("Count =", count)
+        print("Mean =", mean)
+        print("Standard Deviation =", std)
+        print("Min =", min_val)
+        print("Max =", max_val)
+        print("Displaying histogram for", column, "...")
+        analyzer.plot_histogram(column)
+
+
+def handle_housing_data():
+    """
+    Handles the loading and processing of Housing Data.
+    """
+    try:
+        housing_df = pd.read_csv("Housing.csv")
+    except FileNotFoundError as e:
+        print(f"Error reading Housing CSV file: File not found. ({e})")
+        return
+    except pd.errors.EmptyDataError as e:
+        print(f"Error reading Housing CSV file: No data found. ({e})")
+        return
+
+    analyzer = DataAnalyzer(housing_df)
+    print("You have entered Housing Data.")
+
+    while True:
+        col_choice = display_housing_menu()
+        if col_choice == 'f':
+            print("Exiting Housing Data column menu.")
+            break
+
+        # Map user choice to the appropriate column name.
+        column = {"a": "AGE", "b": "BEDRMS", "c": "BUILT",
+                  "d": "ROOMS", "e": "UTILITY"}.get(col_choice)
+        if column is None:
+            print("Invalid column choice. Please enter a valid option (a, b, c, d, e, or f).")
+            continue
+
+        print(f"You selected {column}")
+        stats = analyzer.compute_statistics(column)
+        if stats is None:
+            continue
+        count, mean, std, min_val, max_val = stats
+        print("The statistics for this column are:")
+        print("Count =", count)
+        print("Mean =", mean)
+        print("Standard Deviation =", std)
+        print("Min =", min_val)
+        print("Max =", max_val)
+        print("Displaying histogram for", column, "...")
+        analyzer.plot_histogram(column)
 
 def main():
     """
     Main function to run the Data Analysis App.
     """
     print("***************** Welcome to the Python Data Analysis App **********")
-
     while True:
-        # Main menu options
-        print("\nSelect the file you want to analyze:")
-        print("1. Population Data")
-        print("2. Housing Data")
-        print("3. Exit the Program")
-
-        choice = input("Enter your choice (1-3): ").strip()
-
+        choice = display_main_menu()
         if choice == '1':
-            # Population Data analysis
-            try:
-                pop_df = pd.read_csv("PopChange.csv")
-            except Exception as e:
-                print("Error reading Population CSV file:", e)
-                continue
-
-            analyzer = DataAnalyzer(pop_df)
-            print("You have entered Population Data.")
-
-            while True:
-                # Column menu for Population Data
-                print("\nSelect the Column you want to analyze:")
-                print("a. Pop Apr 1")
-                print("b. Pop Jul 1")
-                print("c. Change Pop")
-                print("d. Exit Column")
-                col_choice = input("Enter your choice (a-d): ").strip().lower()
-
-                if col_choice == 'a':
-                    column = "Pop Apr 1"
-                elif col_choice == 'b':
-                    column = "Pop Jul 1"
-                elif col_choice == 'c':
-                    column = "Change Pop"
-                elif col_choice == 'd':
-                    print("You selected to exit the column menu.")
-                    break
-                else:
-                    print("Invalid column choice. Please enter a valid option (a, b, c, or d).")
-                    continue
-
-                print("You selected", column)
-                stats = analyzer.compute_statistics(column)
-                if stats is None:
-                    continue
-                count, mean, std, min_val, max_val = stats
-                print("The statistics for this column are:")
-                print("Count =", count)
-                print("Mean =", mean)
-                print("Standard Deviation =", std)
-                print("Min =", min_val)
-                print("Max =", max_val)
-                print("Displaying histogram for", column, "...")
-                analyzer.plot_histogram(column)
-
+            handle_population_data()
         elif choice == '2':
-            # Housing Data analysis
-            try:
-                housing_df = pd.read_csv("Housing.csv")
-            except Exception as e:
-                print("Error reading Housing CSV file:", e)
-                continue
-
-            analyzer = DataAnalyzer(housing_df)
-            print("You have entered Housing Data.")
-
-            while True:
-                # Column menu for Housing Data
-                print("\nSelect the Column you want to analyze:")
-                print("a. AGE")
-                print("b. BEDRMS")
-                print("c. BUILT")
-                print("d. ROOMS")
-                print("e. UTILITY")
-                print("f. Exit Column")
-                col_choice = input("Enter your choice (a-f): ").strip().lower()
-
-                if col_choice == 'a':
-                    column = "AGE"
-                elif col_choice == 'b':
-                    column = "BEDRMS"
-                elif col_choice == 'c':
-                    column = "BUILT"
-                elif col_choice == 'd':
-                    column = "ROOMS"
-                elif col_choice == 'e':
-                    column = "UTILITY"
-                elif col_choice == 'f':
-                    print("You selected to exit the column menu.")
-                    break
-                else:
-                    print("Invalid column choice. Please enter a valid option (a, b, c, d, e, or f).")
-                    continue
-
-                print("You selected", column)
-                stats = analyzer.compute_statistics(column)
-                if stats is None:
-                    continue
-                count, mean, std, min_val, max_val = stats
-                print("The statistics for this column are:")
-                print("Count =", count)
-                print("Mean =", mean)
-                print("Standard Deviation =", std)
-                print("Min =", min_val)
-                print("Max =", max_val)
-                print("Displaying histogram for", column, "...")
-                analyzer.plot_histogram(column)
-
+            handle_housing_data()
         elif choice == '3':
             print("*************** Thanks for using the Data Analysis App **********")
             break
@@ -194,3 +225,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    input("Press Enter to exit...")
